@@ -1,0 +1,365 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body bgcolor="#a9a9a9">
+    <div id="editor"></div>
+    <div id="editor2"></div>
+    <textarea id ="Info" readonly></textarea>
+    <script src="./src/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script src="src/theme-twilight.js" type="text/javascript" charset="utf-8"></script>
+    <script src = "./javascripts/jquery-1.8.3.min.js"></script>
+    <script>
+        $(function () {
+           load();
+           Add_to_Table();
+        });
+        function load(){
+            const user = "u";
+            $.post('http://localhost:4000/leader/AddPlayer',{Username:user});
+            $.get('http://localhost:4000/onload/fetchData', {Username:user}, function (data) {
+                if (data =="Finish"){
+                    var contenttext ="All Clones have been labelled, thanks for playing.";
+                    document.getElementById("Info").innerHTML = contenttext;
+                    init_editor1("All Clones have been labelled, thanks for playing.");
+                    init_editor2("All Clones have been labelled, thanks for playing.")
+                    $("#Clone").attr("disabled", true);
+                    $("#NotClone").attr("disabled", true);
+                    $("#Ignore").attr("disabled", true);
+                }
+                else{
+                    const Location1 = data[0]['Location1'];
+                    const Location2 = data[0]['Location2'];
+                    const DocLength1 = data[0]['DocLength1'];
+                    const DocLength2 = data[0]['DocLength2'];
+                    const similarity = data[0]['Similarity'];
+                    const id = data[0]['_id'];
+                    document.cookie = "id="+id+";expires=0;path=/";
+                    document.cookie="user="+user+";expires=0;path=/";
+                    var score = (((DocLength1 + DocLength2)*0.5) /(similarity)^2);
+                    const Score = Math.round(score);
+                    $("#Clone").removeAttr('disabled');
+                    $("#NotClone").removeAttr('disabled');
+                    $("#Ignore").removeAttr('disabled');
+                    $.get('http://localhost:4000/onload/fetchdocument',{location:"add_two_numbers_4_2.addTwo.add_Nodes.scala"}
+                    ,function (data) {
+                        init_editor1(data);
+                    });
+                    $.get('http://localhost:4000/onload/fetchdocument',{location:"add_two_numbers_4_1.addTwo.addNodes.scala"},function (data) {
+                        init_editor2(data);
+                    });
+                    $.get('http://localhost:4000/leader/fetchScore',{Username:user},function (data) {
+                        var contenttext ="Your score is: "+data['Score']+"\nLocation of file in the first editor: " + Location1 +"\nLocation of file in second editor: " + Location2 + "\nSimilarity of the two files: "+ similarity + "\nAdditional Score when document in complete: " + Score;
+                        document.getElementById("Info").innerHTML = contenttext;
+                    })
+                }
+            })
+        }
+        function Add_to_Table(){
+            $.get('http://localhost:4000/leader/GrabScores', {}, function (data) {
+                for (var i=0; i<data.length+1; i+=2){
+                    var Nameid;
+                    var Scoreid;
+                    if (i==0){
+                        Nameid = "Name1";
+                        Scoreid = "Score1";
+                    }
+                    else {
+                        Nameid = "Name" + ((0.5*i)+1).toString();
+                        Scoreid = "Score" + ((0.5*i)+1).toString();
+                    }
+                    //document.write(Nameid+" "+data[i]);
+                    document.getElementById(Nameid).innerHTML = data[i];
+                    document.getElementById(Scoreid).innerHTML = data[i+1];
+
+                }
+            })
+        }
+        function init_editor1(content) {
+            var editor = ace.edit('editor');
+            editor.setTheme("ace/theme/solarized_dark");
+            editor.session.setMode("ace/mode/scala");
+            editor.setValue("");
+            editor.insert(content);
+        }
+        function init_editor2(content) {
+            var editor2 = ace.edit("editor2");
+            editor2.setTheme("ace/theme/solarized_dark");
+            editor2.session.setMode("ace/mode/scala");
+            editor2.setValue("");
+            editor2.insert(content);
+        }
+        function UpdateDB(result) {
+            $("#Clone").attr("disabled", true);
+            $("#NotClone").attr("disabled", true);
+            $("#Ignore").attr("disabled", true);
+            if (result == 0 || result == 1) {
+                const Locations = decodeURIComponent(document.cookie);
+                const array = Locations.split(';');
+                var id = (array[1].split('=')[1]);
+                var username = array[0].split('=')[1];
+                $.post("http://localhost:4000/UpdateDB", {
+                    username: username,
+                    IsClone:result,
+                    Id:id
+                }, function (result) {
+                    load();
+                    Add_to_Table();
+                });
+            }
+            else
+                {
+                    load();
+                    Add_to_Table();
+                }
+            }
+        var editor = ace.edit('editor');
+        var editor2 = ace.edit("editor2");
+        var s1 = editor.session;
+        var s2 = editor2.session;
+        s1.on('changeScrollTop', function() {
+            s2.setScrollTop(s1.getScrollTop())
+        });
+        s2.on('changeScrollTop', function() {
+            s1.setScrollTop(s2.getScrollTop())
+        })
+    </script>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        table#player{
+            top: 2%;
+        }
+        #Info {
+            position: absolute;
+            width: 72%;
+            height: 15%;
+            bottom: 13%;
+            left: 2%;
+        }
+        #editor {
+            position: absolute;
+            top: 2%;
+            left: 1%;
+            width: 35%;
+            height: 68%;
+        }
+        #editor2 {
+            position: absolute;
+            top: 2%;
+            left: 38%;
+            width: 36%;
+            height: 68%;
+        }
+    </style>
+    <!-- The Modal (contains the Sign Up form) -->
+    <div>
+        <table id="player">
+            <tr>
+                <th>Position</th>
+                <th>Player</th>
+                <th>Score</th>
+            </tr>
+            <tr>
+                <td>1.</td>
+                <td id = "Name1"></td>
+                <td id = "Score1"></td>
+            </tr>
+            <tr>
+                <td>2.</td>
+                <td id = "Name2"></td>
+                <td id = "Score2"></td>
+            </tr>
+            <tr>
+                <td>3.</td>
+                <td  id = "Name3"></td>
+                <td  id = "Score3"></td>
+            </tr>
+            <tr>
+                <td>4.</td>
+                <td id = "Name4"></td>
+                <td id = "Score4"></td>
+            </tr>
+            <tr>
+                <td>5.</td>
+                <td id = "Name5"></td>
+                <td  id = "Score5"></td>
+            </tr>
+            <tr>
+                <td>6.</td>
+                <td id = "Name6"></td>
+                <td  id = "Score6"></td>
+            </tr>
+            <tr>
+                <td>7.</td>
+                <td id = "Name7"></td>
+                <td  id = "Score7"></td>
+            </tr>
+            <tr>
+                <td>8.</td>
+                <td id = "Name8"></td>
+                <td  id = "Score8"></td>
+            </tr>
+            <tr>
+                <td>9.</td>
+                <td id = "Name9"></td>
+                <td  id = "Score9"></td>
+            </tr>
+            <tr>
+                <td>10.</td>
+                <td id = "Name10"></td>
+                <td  id = "Score10"></td>
+            </tr>
+            <tr>
+                <td>11.</td>
+                <td id = "Name11"></td>
+                <td id = "Score11"></td>
+            </tr>
+            <tr>
+                <td>12.</td>
+                <td id = "Name12"></td>
+                <td  id = "Score12"></td>
+            </tr>
+            <tr>
+                <td>13.</td>
+                <td id = "Name13"></td>
+                <td id = "Score13"></td>
+            </tr>
+            <tr>
+                <td>14.</td>
+                <td id = "Name14"></td>
+                <td  id = "Score14"></td>
+            </tr>
+            <tr>
+                <td>15.</td>
+                <td id = "Name15"></td>
+                <td  id = "Score15"></td>
+            </tr>
+            <tr>
+                <td>16.</td>
+                <td id = "Name16"></td>
+                <td id = "Score16"></td>
+            </tr>
+            <tr>
+                <td>17.</td>
+                <td id = "Name17"></td>
+                <td id = "Score17"></td>
+            </tr>
+            <tr>
+                <td>18.</td>
+                <td id = "Name18"></td>
+                <td id = "Score18"></td>
+            </tr>
+            <tr>
+                <td>19.</td>
+                <td id = "Name19"></td>
+                <td id = "Score19"></td>
+            </tr>
+            <tr>
+                <td>20.</td>
+                <td id = "Name20"></td>
+                <td id = "Score20"></td>
+            </tr>
+        </table>
+        <style>
+            #player{
+                position: absolute;
+                top: 10%;
+                right: 3%;
+                width: 22%;
+            }
+            .Clone{
+                position: relative;
+                vertical-align: top;
+                width: 25%;
+                height: 60px;
+                padding: 0;
+                font-size: 22px;
+                color: white;
+                text-align: center;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+                background: #0fc00c;
+                border: 0;
+                border-bottom: 2px solid #24b52c;
+                cursor: pointer;
+                -webkit-box-shadow: inset 0 -2px #49b532;
+                box-shadow: inset 0 -2px #24b525;
+            }
+            .Clone:active {
+                 top: 1px;
+                 outline: none;
+                 -webkit-box-shadow: darkgreen;
+                 box-shadow: black;
+             }
+            .NotClone {
+                position: relative;
+                vertical-align: top;
+                width: 25%;
+                height: 60px;
+                padding: 0;
+                font-size: 22px;
+                color: white;
+                text-align: center;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+                background: #c0392b;
+                border: 0;
+                border-bottom: 2px solid #b53224;
+                cursor: pointer;
+                -webkit-box-shadow: inset 0 -2px #b53224;
+                box-shadow: inset 0 -2px #b53224;
+            }
+            .NotClone:active {
+                top: 1px;
+                outline: none;
+                -webkit-box-shadow: none;
+                box-shadow: none;
+            }
+            .Ignore{
+                position: relative;
+                vertical-align: top;
+                width: 25%;
+                height: 60px;
+                padding: 0;
+                font-size: 22px;
+                color: white;
+                text-align: center;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+                background: #251ac0;
+                border: 0;
+                border-bottom: 2px solid #241ab5;
+                cursor: pointer;
+                -webkit-box-shadow: inset 0 -2px #161cb5;
+                box-shadow: inset 0 -2px #1619b5;
+            }
+            .Ignore:active {
+                top: 1px;
+                outline: none;
+                -webkit-box-shadow: #2d3d64;
+                box-shadow: black;
+            }
+        </style>
+    </div>
+</body>
+<footer>
+    <div id="Buttons">
+        <button a href="#" class="Clone" id = "Clone" onclick="UpdateDB(1)">Clone</button>
+        <button a href="#" class="NotClone" id = "NotClone" onclick="UpdateDB(0)">Not Clone</button>
+        <button class = "Ignore" id = "Ignore" onclick="UpdateDB(2)" >Ignore</button>
+        <style>
+            #Buttons{
+                bottom: 30px;
+                position: absolute;
+                width: 80%;
+                height: 60px;
+                left: 7%;
+            }
+        </style>
+    </div>
+</footer>
+</html>
