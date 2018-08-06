@@ -32,10 +32,7 @@ app.use('/',index);
 app.use(function(req, res, next) {
   next(createError(404));
 });
-var db = require('./db');
-db.connect(function(err) {
-  console.log('Database Connection established')
-})
+require('./db');
 // error handler
 cron.schedule('*/10 * * * *', function(){
     cmd.run('node public/javascripts/Punishment.js');

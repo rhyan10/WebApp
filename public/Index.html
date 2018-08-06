@@ -15,7 +15,7 @@
            Add_to_Table();
         });
         function load(){
-            const user = "u";
+            const user = "eeeett";
             $.post('http://localhost:4000/leader/AddPlayer',{Username:user});
             $.get('http://localhost:4000/onload/fetchData', {Username:user}, function (data) {
                 if (data =="Finish"){
@@ -33,7 +33,7 @@
                     const DocLength1 = data[0]['DocLength1'];
                     const DocLength2 = data[0]['DocLength2'];
                     const similarity = data[0]['Similarity'];
-                    const id = data[0]['_id'];
+                    const id = data[0]['ID'];
                     document.cookie = "id="+id+";expires=0;path=/";
                     document.cookie="user="+user+";expires=0;path=/";
                     var score = (((DocLength1 + DocLength2)*0.5) /(similarity)^2);
@@ -49,7 +49,7 @@
                         init_editor2(data);
                     });
                     $.get('http://localhost:4000/leader/fetchScore',{Username:user},function (data) {
-                        var contenttext ="Your score is: "+data['Score']+"\nLocation of file in the first editor: " + Location1 +"\nLocation of file in second editor: " + Location2 + "\nSimilarity of the two files: "+ similarity + "\nAdditional Score when document in complete: " + Score;
+                        var contenttext ="Your score is: "+data[0]['Score']+"\nLocation of file in the first editor: " + Location1 +"\nLocation of file in second editor: " + Location2 + "\nSimilarity of the two files: "+ similarity + "\nAdditional Score when document in complete: " + Score;
                         document.getElementById("Info").innerHTML = contenttext;
                     })
                 }
@@ -105,6 +105,7 @@
                     load();
                     Add_to_Table();
                 });
+
             }
             else
                 {

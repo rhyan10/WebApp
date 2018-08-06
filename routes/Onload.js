@@ -1,38 +1,17 @@
-var express = require('express');
-var router = express.Router();
-var bodyparser = require('body-parser');
-var url = "mongodb://localhost:27017/";
-var MongoClient = require('mongodb').MongoClient;
-var app = express();
-var db = require('../db');
+const express = require('express');
+const router = express.Router();
+const bodyparser = require('body-parser');
+const app = express();
+const { poolPromise } = require('../db');
 app.use(bodyparser());
 app.use(bodyparser.urlencoded());
-router.get('/fetchData', function(req, res, next) {
-    var CsvData = db.get().collection('csvData');
+router.get('/fetchData', async (req, res, next) => {
+    const pool = await poolPromise;
     const Username = req.query.Username;
-    CsvData.aggregate([{
-        $project:{
-            _id: 1,
-            Location1: 1,
-            Location2:1,
-            pointscore:1,
-            usernames:1,
-            DocLength1:1,
-            DocLength2:1,
-            Similarity:1,
-            Length:{$size:"$usernames"}
-            }
-            },{
-        $match: {$and:[{"usernames.username": {$ne: Username}},{Length:{$lt:3}}]}}, {$sample: {size: 1}}]).toArray(function (err, result) {
-            if(result[0] == null)
-            {
-                res.send("Finish");
-            }
-            else {
-                res.send(result);
-            }
-        });
-    });
+    const result = await pool.request()
+        .query("SELECT TOP(1) * from csvData WHERE Username1 != '" + Username + "' AND Username2 != '" + Username + "' AND Username3 = ''",);
+    res.send(result['recordset']);
+});
 router.get('/fetchdocument',function(req,res,next){
         var File = req.query.location;
         var FileReader = require('filereader');
@@ -46,33 +25,3 @@ router.get('/fetchdocument',function(req,res,next){
 
     })
 module.exports = router;
-// MongoClient.connect(url,function (err,db) {
-//     const Username = req.query.Username;
-    // const Username = 'BOBOOOB'
-    // var dbo = db.db("DAL");
-    // dbo.collection('csvData').aggregate([{
-    //     $project:{
-    //         _id: 1,
-    //         Location1: 1,
-    //         Location2:1,
-    //         pointscore:1,
-    //         usernames:1,
-    //         DocLength1:1,
-    //         DocLength2:1,
-    //         Similarity:1,
-    //         Length:{$size:"$usernames"}
-    //
-    //         }
-    //     },
-    //     {
-    //         $match: {
-    //             Length:{$lt:3}
-    //         }
-    //     },
-    //     {
-    //         $sample: {size: 1}
-    //     }
-    //     ]).toArray(function (err, result) {
-    //     console.log(result);
-    // })
-// });

@@ -1,38 +1,64 @@
 var express = require('express');
 var router = express.Router();
 var bodyparser = require('body-parser');
-var db = require('../db');
+var {poolPromise} = require('../db');
 var app = express();
 app.use(bodyparser());
 app.use(bodyparser.json());
 app.use(bodyparser.urlencoded({ extended: true }));
-router.post('/', function(req, res, next) {
+router.post('/', async (req, res, next) => {
     var id = req.body.Id;
     const Clone = parseInt(req.body.IsClone);
     var Username = req.body.username;
-    var CsvData = db.get().collection('csvData');
-    var LeaderBoard = db.get().collection('LeaderBoard');
+    const pool = await poolPromise;
     if(id.match(/[a-z]/i)){
-        Username = parseInt(Username);
-        CsvData.update({_id:Username },{$push:{usernames:{username:id,IsClone:Clone}}});
-        CsvData.find({_id:Username}).toArray(function (err,result) {
-            const points = result[0]['pointscore'];
-            LeaderBoard.update(
-                { Name: id },
-                { $inc: { Score: points} } );
-            res.send('Post request successful');
-        });
+        const _id = id;
+        id = parseInt(Username);
+        Username = _id;
+        const result = await pool.request()
+            .query("SELECT TOP(1) * FROM csvData WHERE ID = "+id+"");
+        const results = result['recordset'][0];
+        await pool.request().query("UPDATE LeaderBoard SET Score = Score + "+results['PointScore']+" WHERE Name = '"+Username+"'");
+        if(results['Username1'] == ''){
+            await pool.request().query("UPDATE csvData SET Username1 = '"+Username+"', IsClone1 = "+Clone+" WHERE ID = "+id+"");
+            res.send('Post Successful')
+        }
+        else {
+            if (results['Username2'] == '') {
+                await pool.request().query("UPDATE csvData SET Username2 = '"+Username+"', IsClone2 = "+Clone+" WHERE ID = "+id+"");
+                res.send('Post Successful')
+            }
+            else {
+                if (results['Username3'] == '') {
+                    await pool.request().query("UPDATE csvData SET Username3 = '"+Username+"', IsClone3 = "+Clone+" WHERE ID = "+id+"");
+                    res.send('Post Successful')
+                }
+            }
+        }
+
     }
     else {
         id = parseInt(id);
-        CsvData.update({_id: id}, {$push: {usernames: {username: Username, IsClone: Clone}}});
-        CsvData.find({_id: id}).toArray(function (err, result) {
-            const points = result[0]['pointscore'];
-            LeaderBoard.update(
-                {Name: Username},
-                {$inc: {Score: points}});
-            res.send('Post request successful');
-        });
+        const result = await pool.request()
+            .query("SELECT TOP(1) * FROM csvData WHERE ID = " + id + "");
+        const results = result['recordset'][0];
+        await pool.request().query("UPDATE LeaderBoard SET Score = Score + "+results['PointScore']+" WHERE Name = '"+Username+"'");
+        if (results['Username1'] == '') {
+            await pool.request().query("UPDATE csvData SET Username1 = '"+Username+"', IsClone1 = "+Clone+" WHERE ID = "+id+"");
+            res.send('Post Successful')
+        }
+        else {
+            if (results['Username2'] == '') {
+                await pool.request().query("UPDATE csvData SET Username2 = '"+Username+"', IsClone2 = "+Clone+" WHERE ID = "+id+"")
+                res.send('Post Successful')
+            }
+            else {
+                if (results['Username3'] == '') {
+                    await pool.request().query("UPDATE csvData SET Username3 = '"+Username+"', IsClone3 = "+Clone+" WHERE ID = "+id+"")
+                    res.send('Post Successful')
+                }
+            }
+        }
     }
 });
 module.exports = router;
