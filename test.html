@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<script src = "./javascripts/jquery-1.8.3.min.js"></script>
+<script src = "/node_modules/bootstrap/scss/utilities/bootstrap.scss"></script>
+<body>
+    <div id = "Userbox">
+        <p>
+            Username:
+        </p>
+    </div>
+    <textarea id = "Username">
+
+    </textarea>
+    <button id = "Addusername" onclick="User()">
+        <span>
+            Add Name
+        </span>
+    </button>
+    <script>
+        function User() {
+            if(document.querySelector("#Username").readOnly){
+                $('#Addusername span').html('Add Name');
+                $("#Username").removeAttr('readonly');
+            }
+            else{
+                const Username = $('#Username').val();
+                $('#Addusername span').html('Change Name');
+                $("#Username").attr("readonly", true);
+                document.cookie = "user="+Username+";expires=Thu, 18 Dec 2024 12:00:00 UTC;path=/";
+                document.write(decodeURIComponent(document.cookie))
+            }
+
+        }
+    </script>
+    <style>
+        #Userbox {
+            position: absolute;
+            width: 5%;
+            height: 10%;
+            right:21%;
+        }
+        #Username{
+            height: 3%;
+            width: 10%;
+            right: 10%;
+            top: 2%;
+            position: absolute;
+        }
+        #Addusername{
+            right:2%;
+            height: 3%;
+            width: 7%;
+            top:2%;
+            position: absolute;
+        }
+    </style>
+</body>
+</html>
